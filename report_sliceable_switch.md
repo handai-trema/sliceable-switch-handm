@@ -76,7 +76,8 @@ get '指定するURL' do
   end
 end
 ```
-そして，localでは以下のコマンドによりAPIを利用できる．<br>
+そして，`./bit/rackup`コマンドを実行することでサーバを立ち上げ，
+localでは以下のコマンドによりAPIを利用できる．<br>
 ```
 curl -sS -X 通信メソッド（GET / POST） 'http://localhost:9292/指定したURL'
 ```
