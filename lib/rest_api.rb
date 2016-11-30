@@ -183,7 +183,7 @@ class RestApi < Grape::API
     end
   end
   
-  desc 'Merge a slice.'
+  desc 'Merge 2 slice.'
   params do
     requires :slice_id_1, type: String, desc: 'Slice ID 1.'
     requires :slice_id_2, type: String, desc: 'Slice ID 2.'
