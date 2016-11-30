@@ -167,5 +167,34 @@ class RestApi < Grape::API
         find_mac_address(Port.parse(params[:port_id]), params[:mac_address_id])
     end
   end
+  
+  #Original APIs
+  desc 'Split a slice.'
+  params do
+    requires :slice_id, type: String, desc: 'Slice ID.'
+    requires :split_slice_id_1, type: String, desc: 'New Slice ID 1.'
+    requires :split_slice_id_2, type: String, desc: 'New Slice ID 2.'
+  end
+  get 'slices/:slice_id/split_slice_id_1/:split_slice_id_1/split_slice_id_2/:split_slice_id_2' do
+    rest_api do
+      "#{:slice_id} is SPLIT to #{:split_slice_id_1} and #{:split_slice_id_2}!"
+      #Slice.find_by!(name: params[:slice_id]).
+      #  find_mac_address(Port.parse(params[:port_id]), params[:mac_address_id])
+    end
+  end
+  
+  desc 'Merge a slice.'
+  params do
+    requires :slice_id_1, type: String, desc: 'Slice ID 1.'
+    requires :slice_id_2, type: String, desc: 'Slice ID 2.'
+    requires :merged_slice_id, type: String, desc: 'Merged Slice ID.'
+  end
+  get 'slices/:slice_id_1/slice_id_1/:slice_id_2/slice_id_2/:merged_slice_id/merged_slice_id' do
+    rest_api do
+      "#{:slice_id_1} and #{:slice_id_2} is MERGED into a #{:merged_slice_id}!"
+      #Slice.find_by!(name: params[:slice_id]).
+      #  find_mac_address(Port.parse(params[:port_id]), params[:mac_address_id])
+    end
+  end
 end
 # rubocop:enable ClassLength
