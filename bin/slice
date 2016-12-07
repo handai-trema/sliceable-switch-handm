@@ -162,18 +162,17 @@ module SliceApp
   end
 
   desc 'Merge slice'
-  arg_name 'slice1 slice2 opt merged_slice'
+  arg_name 'slice1 slice2 merged_slice'
   command :merge do |c|
     c.desc 'Location to find socket files'
     c.flag [:S, :socket_dir], default_value: Trema::DEFAULT_SOCKET_DIR
 
     c.action do |_global_options, options, args|
-      fail 'wrong num of args.' if args.size != 4
+      fail 'wrong num of args.' if args.size != 3
       slice1 = args[0]
       slice2 = args[1]
-      opt = args[2]
-      merged_slice = args[3]
-      slice(options[:socket_dir]).split(slice1, slice2, opt, merged_slice)
+      merged_slice = args[2]
+      slice(options[:socket_dir]).merge(slice1, slice2, merged_slice)
     end
   end
 
