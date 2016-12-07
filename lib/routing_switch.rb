@@ -41,6 +41,19 @@ class RoutingSwitch < Trema::Controller
   delegate :port_modify, to: :@topology
 
   def packet_in(dpid, packet_in)
+    #puts packet_in.in_port
+    #puts packet_in.data
+#    case packet_in.data
+#    when Arp::Request
+#      @path_manager.packet_in(dpid, packet_in) unless packet_in.lldp?
+#      return
+#    when Arp::Reply
+#      @path_manager.packet_in(dpid, packet_in) unless packet_in.lldp?
+#      return
+#    when Pio::Parser::EthernetFrame
+#      @path_manager.packet_in(dpid, packet_in) unless packet_in.lldp?
+#      return
+#    end
     @topology.packet_in(dpid, packet_in)
     @path_manager.packet_in(dpid, packet_in) unless packet_in.lldp?
   end
