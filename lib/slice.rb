@@ -51,11 +51,11 @@ class Slice
   def self.split(org_slice, slice1, slice2)
 #    if opt == "--slice"
       slice1, hosts1 = slice1.split(":",2)
-      puts slice1
-      puts hosts1
+#      puts slice1
+#      puts hosts1
       slice2, hosts2 = slice2.split(":",2)
-      puts slice2
-      puts hosts2
+#      puts slice2
+#      puts hosts2
       hosts1 = hosts1.split(",")
       hosts2 = hosts2.split(",")
       if find_by(name: slice1)
@@ -85,6 +85,31 @@ class Slice
             org_slice.delete_mac_address(each, each2)
             org_slice.delete_port(each2)
           end
+        end
+      end
+#    end
+  end
+
+
+ def self.merge(slice1, slice2, merged_slice)
+#    if opt == "--slice"
+      if find_by(name: merged_slice)
+        fail SliceAlreadyExistsError, "Slice #{merged_slice} already exists"
+      end
+      create(merged_slice)
+      merged_slice = find_by!(name: merged_slice)
+      slice1 = find_by!(name: slice1)
+      slice2 = find_by!(name: slice2)
+      slice1.ports.each do |each|
+        slice1.mac_addresses(each).each do |each2|
+          merged_slice.add_mac_address(each2, each)
+          slice1.delete_port(each)
+        end
+      end
+      slice2.ports.each do |each|
+        slice2.mac_addresses(each).each do |each2|
+          merged_slice.add_mac_address(each2, each)
+          slice2.delete_port(each)
         end
       end
 #    end
