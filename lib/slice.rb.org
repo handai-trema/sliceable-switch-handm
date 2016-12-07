@@ -38,7 +38,6 @@ class Slice
   end
 
   def self.destroy(name)
-    puts "dest"
     find_by!(name: name)
     Path.find { |each| each.slice == name }.each(&:destroy)
     all.delete_if { |each| each.name == name }
@@ -47,49 +46,6 @@ class Slice
   def self.destroy_all
     all.clear
   end
-
-  def self.split(org_slice, slice1, slice2)
-#    if opt == "--slice"
-      slice1, hosts1 = slice1.split(":",2)
-      puts slice1
-      puts hosts1
-      slice2, hosts2 = slice2.split(":",2)
-      puts slice2
-      puts hosts2
-      hosts1 = hosts1.split(",")
-      hosts2 = hosts2.split(",")
-      if find_by(name: slice1)
-        fail SliceAlreadyExistsError, "Slice #{slice1} already exists"
-      end
-      if find_by(name: slice2)
-        fail SliceAlreadyExistsError, "Slice #{slice2} already exists"
-      end
-      create(slice1)
-      create(slice2)
-      org_slice = find_by!(name: org_slice)
-      slice1 = find_by!(name: slice1)
-      slice2 = find_by!(name: slice2)
-      hosts1.each do |each|
-        org_slice.ports.each do |each2|
-          if org_slice.find_mac_address(each2, each)
-            slice1.add_mac_address(each, each2)
-            org_slice.delete_mac_address(each, each2)
-            org_slice.delete_port(each2)
-          end
-        end
-      end
-      hosts2.each do |each|
-        org_slice.ports.each do |each2|
-          if org_slice.find_mac_address(each2, each)
-            slice2.add_mac_address(each, each2)
-            org_slice.delete_mac_address(each, each2)
-            org_slice.delete_port(each2)
-          end
-        end
-      end
-#    end
-  end
-
 
   attr_reader :name
 
@@ -155,7 +111,7 @@ class Slice
     if @ports[Port.new(port_attrs)].include? mac
       mac
     else
-#      fail MacAddressNotFoundError, "MAC address #{mac_address} not found"
+      fail MacAddressNotFoundError, "MAC address #{mac_address} not found"
     end
   end
 

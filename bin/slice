@@ -146,6 +146,37 @@ module SliceApp
     end
   end
 
+  desc 'Split slice'
+  arg_name 'org_slise slice1 slice2'
+  command :split do |c|
+    c.desc 'Location to find socket files'
+    c.flag [:S, :socket_dir], default_value: Trema::DEFAULT_SOCKET_DIR
+
+    c.action do |_global_options, options, args|
+      fail 'wrong num of args.' if args.size != 3
+      org_slice = args[0]
+      slice1 = args[1]
+      slice2 = args[2]
+      slice(options[:socket_dir]).split(org_slice, slice1, slice2)
+    end
+  end
+
+  desc 'Merge slice'
+  arg_name 'slice1 slice2 opt merged_slice'
+  command :merge do |c|
+    c.desc 'Location to find socket files'
+    c.flag [:S, :socket_dir], default_value: Trema::DEFAULT_SOCKET_DIR
+
+    c.action do |_global_options, options, args|
+      fail 'wrong num of args.' if args.size != 4
+      slice1 = args[0]
+      slice2 = args[1]
+      opt = args[2]
+      merged_slice = args[3]
+      slice(options[:socket_dir]).split(slice1, slice2, opt, merged_slice)
+    end
+  end
+
   exit run(ARGV)
 end
 # rubocop:enable ModuleLength

@@ -13,6 +13,10 @@ class PathInSliceManager < PathManager
   # rubocop:disable MethodLength
   def packet_in(_dpid, packet_in)
     slice = Slice.find do |each|
+      puts each.name
+      each.each do |each2|
+        puts "[switch] #{each.find_port(each2).name}, [host] #{each.mac_addresses(each2)[0]}"
+      end
       each.member?(packet_in.slice_source) &&
       each.member?(packet_in.slice_destination(@graph))
     end
