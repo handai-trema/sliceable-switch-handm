@@ -98,6 +98,72 @@ curl -sS -X GET 'http://localhost:9292/slice_id_1/slice_a/slice_id_2/slice_b/mer
 
 
 
+##実行結果
+スライスの分割と結合機能が正しく動作することを、実機におけるテストで確認した。<br>
+まず、実機に２つのホスト(ipアドレスはそれぞれ、192.168.11と192.168.1.12)をそれぞれ異なるスイッチに接続し、その２つのスイッチ間にパスができるようにリンク（ケーブル）をつなぐ。そして、以下のコマンドでsliceable-switchを起動させる。<br>
+```
+bundle exec trema run lib/routing_switch.rb -- --slicing
+```
+次に、２つのホストを同一のスライスに所属させるため、スライス(slice1)を作成し、２つのホストをスライスに追加する。<br>
+```
+./bin/slice add slice1
+./bin/slice add_host --port 0x9:27 --mac 00:1f:16:39:1a:97 --slice slice1
+./bin/slice add_host --port 0x2:4 --mac 04:20:9a:40:47:c2 --slice slice1
+```
+この状態で、一方のホスト(192.168.1.11)から他方のホスト(192.168.1.12)にpingを送信すると、以下のようにpingが通っている(ホスト間で通信が行える)ことが確認できた。<br>
+```
+~$ ping 192.168.1.12
+PING 192.168.1.12 (192.168.1.12) 56(84) bytes of data.
+64 bytes from 192.168.1.12: icmp_seq=1 ttl=128 time=291 ms
+64 bytes from 192.168.1.12: icmp_seq=2 ttl=128 time=505 ms
+64 bytes from 192.168.1.12: icmp_seq=3 ttl=128 time=609 ms
+64 bytes from 192.168.1.12: icmp_seq=4 ttl=128 time=499 ms
+64 bytes from 192.168.1.12: icmp_seq=5 ttl=128 time=556 ms
+64 bytes from 192.168.1.12: icmp_seq=6 ttl=128 time=311 ms
+^C
+--- 192.168.1.12 ping statistics ---
+6 packets transmitted, 6 received, 0% packet loss, time 5001ms
+rtt min/avg/max/mdev = 291.435/462.309/609.816/119.474 ms
+```
+ここで、今回の課題において実装したスライスの分割機能(splitコマンド)により、以下のようにslice1をslice2とslice3に分割する。slice1に所属していた２つのホストは、それぞれ別のスライスへと所属させる。<br>
+```
+./bin/slice split slice1 slice2:04:20:9a:40:47:c2 slice3:00:1f:16:39:1a:97
+```
+２つのホストはそれぞれ異なるスライスに所属しているため、互いに通信は行えない。実際、一方のホスト(192.168.1.11)から他方のホスト(192.168.1.12)にpingを送信しても、以下のようにpingは通らなかった。<br>
+```
+~$ ping 192.168.1.12
+PING 192.168.1.12 (192.168.1.12) 56(84) bytes of data.
+From 192.168.1.11 icmp_seq=1 Destination Host Unreachable
+From 192.168.1.11 icmp_seq=2 Destination Host Unreachable
+From 192.168.1.11 icmp_seq=3 Destination Host Unreachable
+From 192.168.1.11 icmp_seq=4 Destination Host Unreachable
+From 192.168.1.11 icmp_seq=5 Destination Host Unreachable
+From 192.168.1.11 icmp_seq=6 Destination Host Unreachable
+^C
+--- 192.168.1.12 ping statistics ---
+7 packets transmitted, 0 received, +6 errors, 100% packet loss, time 6032ms
+pipe 3
+```
+splitコマンドで分割した２つのスライスslice2とslice3を、今回の課題で実装したもう１つの機能である結合機能(mergeコマンド)により結合する。以下のコマンドを実行すると、分割されていたslice2とslice3が１つのスライスmergedに結合された。
+```
+./bin/slice merge slice3 slice2 merged
+```
+slice2とslice3の別々のスライスに所属していた２つのホストが同一のスライスに所属することになるため、上と同様に一方のホスト(192.168.1.11)から他方のホスト(192.168.1.12)にpingを送信すると、以下のようにpingが通っている(ホスト間で通信が行える)ことが確認できた。<br>
+```
+~$ ping 192.168.1.12
+PING 192.168.1.12 (192.168.1.12) 56(84) bytes of data.
+64 bytes from 192.168.1.12: icmp_seq=1 ttl=128 time=632 ms
+64 bytes from 192.168.1.12: icmp_seq=2 ttl=128 time=464 ms
+64 bytes from 192.168.1.12: icmp_seq=3 ttl=128 time=380 ms
+64 bytes from 192.168.1.12: icmp_seq=4 ttl=128 time=422 ms
+64 bytes from 192.168.1.12: icmp_seq=5 ttl=128 time=478 ms
+64 bytes from 192.168.1.12: icmp_seq=6 ttl=128 time=546 ms
+^C
+--- 192.168.1.12 ping statistics ---
+7 packets transmitted, 6 received, 14% packet loss, time 6007ms
+rtt min/avg/max/mdev = 380.296/487.597/632.126/82.319 ms
+```
+
 ##<a name="links">関連リンク
 * [課題 (スライス機能の拡張)](https://github.com/handai-trema/deck/blob/develop/week8/assignment_sliceable_switch.md)
 * [lib/rest_api.rb](lib/rest_api.rb)
