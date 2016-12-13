@@ -5,7 +5,8 @@ require 'path_manager'
 require 'port'
 require 'slice_exceptions'
 require 'slice_extensions'
- 
+require 'view/html'
+
 # Virtual slice.
 # rubocop:disable ClassLength
 class Slice
@@ -19,6 +20,7 @@ class Slice
       fail SliceAlreadyExistsError, "Slice #{name} already exists"
     end
     new(name).tap { |slice| all << slice }
+    Html.update(all)
   end
 
   # This method smells of :reek:NestedIterators but ignores them
@@ -112,7 +114,7 @@ class Slice
           slice2.delete_port(each)
         end
       end
-#    end
+#    end 
   end
 
 
@@ -208,5 +210,6 @@ class Slice
   def method_missing(method, *args, &block)
     @ports.__send__ method, *args, &block
   end
+
 end
 # rubocop:enable ClassLength
