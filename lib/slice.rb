@@ -114,7 +114,7 @@ class Slice
           slice2.delete_port(each)
         end
       end
-#    end
+#    end 
   end
 
 

@@ -6,19 +6,39 @@ require 'slice'
   # Topology controller's GUI (graphviz).
   class Html
     def initialize()#(output = 'topology.html')
-      @nodes=[]
-      @edges=[]
     end
     def self.update(slices)
-      puts slices
+      @slicearray=[]
+      @slicetocount={}
+      @slicetohost={}
+      @outputname = "./lib/view/sliceoutput.html"
+      count=0
+     # puts slices
       slices.each do |each|
-        puts each
+        @slicearray.push(each.name)
         each.ports.each do |each2|
           each.mac_addresses(each2).each do |each3|
-            puts each3
+	    if !each3.nil? then
+              @slicetohost[each.name]=each3.to_s
+ 	    end
           end
         end
       end
+      print @slicetohost
+      print "\n"
+      base =File.read("./lib/view/create_vis_base.txt")
+      base2 =File.read("./lib/view/create_vis_base2.txt")
+      main=""
+      @slicearray.each do |each|
+	@slicetocount[each]=count
+	main+="addSliceExample(\""+count.to_s+"\",\""+each+"\")\n"
+        count+=1
+      end
+      @slicetohost.each do|key,value|
+ 	main+="addHost(\""+value+"\",\""+@slicetocount[key].to_s+"\")\n"
+      end
+      result=base+main+base2
+      File.write(@outputname, result)
     end
   end
 =begin
