@@ -6,6 +6,7 @@ Branch: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; develop<br>
 ##目次
 * [提出者](#submitter)
 * [課題内容](#assignment)
+* [スライスの分割・結合](#add_function)
 * [スライスの可視化](#visualize)
 * [REST APIの追加](#add_api)
 * [関連リンク](#links)
