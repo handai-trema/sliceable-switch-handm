@@ -16,10 +16,11 @@ require 'slice'
      # puts slices
       slices.each do |each|
         @slicearray.push(each.name)
+	@slicetohost[each.name]=[]
         each.ports.each do |each2|
           each.mac_addresses(each2).each do |each3|
 	    if !each3.nil? then
-              @slicetohost[each.name]=each3.to_s
+              @slicetohost[each.name].push(each3.to_s)
  	    end
           end
         end
@@ -34,8 +35,13 @@ require 'slice'
 	main+="addSliceExample(\""+count.to_s+"\",\""+each+"\")\n"
         count+=1
       end
+      print "TEST2\n"
       @slicetohost.each do|key,value|
- 	main+="addHost(\""+value+"\",\""+@slicetocount[key].to_s+"\")\n"
+	if !value.nil? then
+	value.each do |key2,value2|
+ 	  main+="addHost(\""+value2.to_s+"\",\""+@slicetocount[key].to_s+"\")\n"
+	end
+        end
       end
       result=base+main+base2
       File.write(@outputname, result)
