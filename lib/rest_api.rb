@@ -3,7 +3,7 @@ require 'port'
 require 'slice_exceptions'
 require 'slice_extensions'
 require 'trema'
-
+ 
 module DRb
   # delegates to_json to remote object
   class DRbObject
@@ -171,29 +171,27 @@ class RestApi < Grape::API
   #Original APIs
   desc 'Split a slice.'
   params do
-    requires :slice_id, type: String, desc: 'Slice ID.'
-    requires :split_slice_id_1, type: String, desc: 'New Slice ID 1.'
-    requires :split_slice_id_2, type: String, desc: 'New Slice ID 2.'
+    requires :org_slice, type: String, desc: 'Original Slice.'
+    requires :split_slice1, type: String, desc: 'New Slice 1.'
+    requires :split_slice2, type: String, desc: 'New Slice 2.'
   end
-  get 'slice_id/:slice_id/split_slice_id_1/:split_slice_id_1/split_slice_id_2/:split_slice_id_2' do
+  get 'org_slice/:org_slice/split_slice1/:split_slice1/split_slice2/:split_slice2' do
     rest_api do
-      "#{:slice_id} is SPLIT to #{:split_slice_id_1} and #{:split_slice_id_2}!"
-      #Slice.find_by!(name: params[:slice_id]).
-      #  find_mac_address(Port.parse(params[:port_id]), params[:mac_address_id])
+      "#{params[:org_slice]} is SPLIT to #{params[:split_slice1]} and #{params[:split_slice2]}!"
+      Slice.split(params[:org_slice], params[:split_slice1], params[:split_slice2])
     end
   end
   
   desc 'Merge 2 slices.'
   params do
-    requires :slice_id_1, type: String, desc: 'Slice ID 1.'
-    requires :slice_id_2, type: String, desc: 'Slice ID 2.'
-    requires :merged_slice_id, type: String, desc: 'Merged Slice ID.'
+    requires :slice1, type: String, desc: 'Slice 1.'
+    requires :slice2, type: String, desc: 'Slice 2.'
+    requires :merged_slice, type: String, desc: 'Merged Slice.'
   end
-  get 'slice_id_1/:slice_id_1/slice_id_2/:slice_id_2/merged_slice_id/:merged_slice_id' do
+  get 'slice1/:slice1/slice2/:slice2/merged_slice/:merged_slice' do
     rest_api do
-      "#{params[:slice_id_1]} and #{params[:slice_id_2]} is MERGED into a #{params[:merged_slice_id]}!"
-      #Slice.find_by!(name: params[:slice_id]).
-      #  find_mac_address(Port.parse(params[:port_id]), params[:mac_address_id])
+      "#{params[:slice1]} and #{params[:slice2]} is MERGED into a #{params[:merged_slice]}!"
+      Slice.merge(params[:slice1], params[:slice2], params[:merged_slice])
     end
   end
 end

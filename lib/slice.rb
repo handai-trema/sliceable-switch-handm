@@ -5,7 +5,7 @@ require 'path_manager'
 require 'port'
 require 'slice_exceptions'
 require 'slice_extensions'
-require 'view/html'
+ 
 # Virtual slice.
 # rubocop:disable ClassLength
 class Slice
@@ -88,7 +88,6 @@ class Slice
         end
       end
 #    end
-
   end
 
 
