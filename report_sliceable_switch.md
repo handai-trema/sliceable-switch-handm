@@ -99,6 +99,7 @@ curl -sS -X GET 'http://localhost:9292/slice_id_1/slice_a/slice_id_2/slice_b/mer
 
 
 ##実行結果
+###スライスの分割と結合
 スライスの分割と結合機能が正しく動作することを、実機におけるテストで確認した。<br>
 まず、実機に２つのホスト(ipアドレスはそれぞれ、192.168.11と192.168.1.12)をそれぞれ異なるスイッチに接続し、その２つのスイッチ間にパスができるようにリンク（ケーブル）をつなぐ。そして、以下のコマンドでsliceable-switchを起動させる。<br>
 ```
@@ -162,6 +163,43 @@ PING 192.168.1.12 (192.168.1.12) 56(84) bytes of data.
 --- 192.168.1.12 ping statistics ---
 7 packets transmitted, 6 received, 14% packet loss, time 6007ms
 rtt min/avg/max/mdev = 380.296/487.597/632.126/82.319 ms
+```
+
+###REST_API
+REST_APIが正しく動作することを、実機のテストで確認した。テスト環境は上記のテストにおけるものと同一である（２つのホストが異なるスイッチに接続されており、それらの間にパスができるようにリンクが存在する状況）。  
+まず、sliceable-switchを起動し、別の端末から以下のコマンドを用いてREST_API用のサーバを立ち上げる。
+```
+./bin/rackup
+```
+そして、２つのホストを同一のスライスに所属させるため、新しくスライス(slice0)を作成し、２つのホストをスライスに加える。このとき、ホスト間で通信が行えていることを、pingコマンドを用いて確認した。  
+ここで、作成したスライスをREST_APIを用いて分割する。以下のように、curlコマンドを用いてWebサーバにメッセージを送った。
+```
+curl -sS -X GET 'http://localhost:9292/org_slice/slice0/split_slice1/slice1:00:1f:16:39:1a:97/split_slice2/slice2:04:20:9a:40:47:c2'
+```
+メッセージを受け取ったWebサーバは、以下のように200のステータスコードを返していた。
+```
+127.0.0.1 - - [13/Dec/2016:16:09:59 +0900] "GET /org_slice/slice0/split_slice1/slice1:00:1f:16:39:1a:97/split_slice2/slice2:04:20:9a:40:47:c2 HTTP/1.1" 200 21 0.9260
+```
+下記の通り、スライスの分割が正しく行われており、ホスト間では通信が行えなかった。
+```
+slice1
+[switch] 0x9:27, [host] 00:1f:16:39:1a:97
+slice2
+[switch] 0x2:4, [host] 04:20:9a:40:47:c2
+```
+次に、分割したスライスをREST_APIを用いて結合する。以下のように、curlコマンドを用いてWebサーバにメッセージを送った。
+```
+curl -sS -X GET 'http://localhost:9292/slice1/slice1/slice2/slice2/merged_slice/merge'
+```
+メッセージを受け取ったWebサーバは、以下のように200のステータスコードを返していた。
+```
+127.0.0.1 - - [13/Dec/2016:16:10:15 +0900] "GET /slice1/slice1/slice2/slice2/merged_slice/merge HTTP/1.1" 200 44 0.0040
+```
+下記の通り、スライスの結合が正しく行えており、ホスト間で通信が行える（pingが通る）ことが確認できた。
+```
+merge
+[switch] 0x9:27, [host] 00:1f:16:39:1a:97
+[switch] 0x2:4, [host] 04:20:9a:40:47:c2
 ```
 
 ##<a name="links">関連リンク
