@@ -51,13 +51,8 @@ class Slice
   end
 
   def self.split(org_slice, slice1, slice2)
-#    if opt == "--slice"
       slice1, hosts1 = slice1.split(":",2)
-#      puts slice1
-#      puts hosts1
       slice2, hosts2 = slice2.split(":",2)
-#      puts slice2
-#      puts hosts2
       hosts1 = hosts1.split(",")
       hosts2 = hosts2.split(",")
       if find_by(name: slice1)
@@ -89,15 +84,11 @@ class Slice
           end
         end
       end
-#    end    
-    #new(name).tap { |slice| all << slice }
     Html.update(Slice.all)
-
   end
 
 
  def self.merge(slice1, slice2, merged_slice)
-#    if opt == "--slice"
       if find_by(name: merged_slice)
         fail SliceAlreadyExistsError, "Slice #{merged_slice} already exists"
       end
@@ -117,8 +108,6 @@ class Slice
           slice2.delete_port(each)
         end
       end
-#    end
-    #new(name).tap { |slice| all << slice }
     Html.update(Slice.all)
   end
 

@@ -57,6 +57,193 @@ Branch: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; develop<br>
   ・分割・統合のできるAPIを追加
 ```
 
+##<a name="add_function">スライスの分割・結合
+スライスの分割及び結合における共通の仕様を述べる．
+
+1. 属するホストのない，空のスライスを許容する
+2. 分割あるいは結合処理を行う前にあったスライスを，これらの処理によって削除することはない
+3. 分割あるいは結合処理を行うことにより，スライスに属していたホストがいずれのスライスにも属さなくなる，ということはない
+
+以上の仕様に従って，スライスの分割及び結合を実装した．
+以下ではそれぞれの実装内容を述べる．
+
+###スライスの分割
+スライスの分割に関する仕様を以下のように定めた．
+
+1. 一度の実行により1つのスライスを2つに分割できる
+2. 分割後，新たに2つのスライスが生成され，分割前のスライスは削除されない
+3. 分割前のスライスに属するホストを，分割後の2つのスライスのいずれかに所属させることができる
+4. 所属の変更を指定しなかったホストについては，分割処理実行後も分割元のスライスに所属させることとする
+
+上記の仕様に従ってスライスの分割処理を実装した．
+
+スライスslice0に含まれる，Macアドレスが11:11:11:11:11:11及び22:22:22:22:22:22のホストの所属を新たなスライスslice1に，33:33:33:33:33:33のホストの所属を新たなスライスslice2に変更するという
+分割処理は以下のように実行する．
+```
+bin/slice split slice0 slice1:11:11:11:11:11:11,22:22:22:22:22:22 slice2:33:33:33:33:33:33
+```
+
+以下では，実装時に変更したバイナリファイルおよびSliceクラスファイルという2つのファイルについて説明を述べる．
+
+####バイナリファイル（bin/slice）の変更点
+バイナリファイルはサブコマンド`split`を用いてスライスの分割処理を実行するためのプログラムである．
+
+以下のように，splitというサブコマンドを実装した．
+```ruby
+  desc 'Split slice'
+  arg_name 'org_slise slice1 slice2'
+  command :split do |c|
+    c.desc 'Location to find socket files'
+    c.flag [:S, :socket_dir], default_value: Trema::DEFAULT_SOCKET_DIR
+
+    c.action do |_global_options, options, args|
+      fail 'wrong num of args.' if args.size != 3
+      org_slice = args[0]
+      slice1 = args[1]
+      slice2 = args[2]
+      slice(options[:socket_dir]).split(org_slice, slice1, slice2)
+    end
+  end
+```
+引数には分割前のスライス名であるorg_slice，分割後のスライス名とそのスライスに属するホストのMacアドレスを表す文字列であるslice1及びslice2をとり，
+これをSliceクラスのメソッドsplitに渡している．
+
+####Sliceクラス（lib/slice.rb）の変更点
+バイナリファイルによって呼び出されるメソッドsplitを追加した．
+引数には分割前のスライス名であるorg_slice，分割後のスライス名とそのスライスに属するホストのMacアドレスを表す文字列であるslice1及びslice2をとる．
+
+slice1及びslice2は，それぞれのスライス名とそのスライスに所属させるホストのMacアドレスを，
+コロン（":"）を区切り文字として連結した文字列である．ただし，分割後のスライスに複数のホストを所属させる場合はそのMacアドレスをカンマ（","）を区切り文字として連結して記述する．
+（例）slice_a:11:11:11:11:11:11,22:22:22:22:22:22
+
+簡易なアルゴリズムは以下のようになる．
+
+1. 引数を分割し，スライス分割後のスライス名及びそのスライスに所属させるホストのMacアドレスの配列を生成する
+2. 分割後のスライス名がすでに利用されていないかをチェックし，利用されていれば終了する
+3. 分割後のスライス2つを作成する
+4. 分割前のスライスにおける全Macアドレスの中から，分割後のスライスに所属を変更させるものを探索する
+5. 該当するホストに関する情報（接続しているスイッチのdpid及びポート番号）を分割後のスライスのインスタンスに追加する
+6. 該当するホストに関する情報を分割前のスライスのインスタンスから削除する
+7. スライスの状況が変化したことを，Htmlクラスに通知する（updateメソッド）
+
+以下が実装コードである．
+```ruby
+  def self.split(org_slice, slice1, slice2)
+      slice1, hosts1 = slice1.split(":",2)
+      slice2, hosts2 = slice2.split(":",2)
+      hosts1 = hosts1.split(",")
+      hosts2 = hosts2.split(",")
+      if find_by(name: slice1)
+        fail SliceAlreadyExistsError, "Slice #{slice1} already exists"
+      end
+      if find_by(name: slice2)
+        fail SliceAlreadyExistsError, "Slice #{slice2} already exists"
+      end
+      create(slice1)
+      create(slice2)
+      org_slice = find_by!(name: org_slice)
+      slice1 = find_by!(name: slice1)
+      slice2 = find_by!(name: slice2)
+      hosts1.each do |each|
+        org_slice.ports.each do |each2|
+          if org_slice.find_mac_address(each2, each)
+            slice1.add_mac_address(each, each2)
+            org_slice.delete_mac_address(each, each2)
+            org_slice.delete_port(each2)
+          end
+        end
+      end
+      hosts2.each do |each|
+        org_slice.ports.each do |each2|
+          if org_slice.find_mac_address(each2, each)
+            slice2.add_mac_address(each, each2)
+            org_slice.delete_mac_address(each, each2)
+            org_slice.delete_port(each2)
+          end
+        end
+      end
+    Html.update(Slice.all)
+  end
+```
+
+###スライスの結合
+スライスの結合に関する仕様を以下のように定めた．
+
+1. 一度の実行により2つのスライスをそれぞれのスライスとは異なる1つのスライスに結合できる
+2. 分割後，新たに1つのスライスが生成され，結合前のスライスは削除されない
+3. 結合前の2つのスライスに属していたホストは，結合処理によってすべて結合後のスライスに所属を変更する
+
+上記の仕様に従ってスライスの結合処理を実装した．
+
+スライスslice1とスライスslice2に含まれる全ホストの所属を新たなスライスmerged_sliceに変更する，
+スライスの結合処理は以下のように実行する．
+```
+bin/slice merge slice1 slice2 merged_slice
+```
+
+以下では，実装時に変更したバイナリファイルおよびSliceクラスファイルという2つのファイルについて説明を述べる．
+
+####バイナリファイル（bin/slice）の変更点
+バイナリファイルはサブコマンド`merge`を用いてスライスの分割処理を実行するためのプログラムである．
+
+以下のように，mergeというサブコマンドを実装した．
+```ruby
+  desc 'Merge slice'
+  arg_name 'slice1 slice2 merged_slice'
+  command :merge do |c|
+    c.desc 'Location to find socket files'
+    c.flag [:S, :socket_dir], default_value: Trema::DEFAULT_SOCKET_DIR
+
+    c.action do |_global_options, options, args|
+      fail 'wrong num of args.' if args.size != 3
+      slice1 = args[0]
+      slice2 = args[1]
+      merged_slice = args[2]
+      slice(options[:socket_dir]).merge(slice1, slice2, merged_slice)
+    end
+  end
+```
+引数には結合前のスライス名であるslice1及びslice2，結合後のスライス名であるmerged_sliceをとり，
+これをSliceクラスのメソッドmergeに渡している．
+
+####Sliceクラス（lib/slice.rb）の変更点
+バイナリファイルによって呼び出されるメソッドmergeを追加した．
+引数には結合前のスライス名であるslice1及びslice2，結合後のスライス名であるmerged_sliceをとる．
+
+簡易なアルゴリズムは以下のようになる．
+
+1. 結合後のスライス名がすでに利用されていないかをチェックし，利用されていれば終了する
+2. 結合後のスライス2つを作成する
+3. 結合前のスライスに属する全ホストに関する情報（接続しているスイッチのdpid及びポート番号）を結合後のスライスのインスタンスに追加する
+4. 結合前のスライスに属する全ホストに関する情報を，結合前のスライスのインスタンスから削除する
+5. スライスの状況が変化したことを，Htmlクラスに通知する（updateメソッド）
+
+以下が実装コードである．
+```ruby
+ def self.merge(slice1, slice2, merged_slice)
+      if find_by(name: merged_slice)
+        fail SliceAlreadyExistsError, "Slice #{merged_slice} already exists"
+      end
+      create(merged_slice)
+      merged_slice = find_by!(name: merged_slice)
+      slice1 = find_by!(name: slice1)
+      slice2 = find_by!(name: slice2)
+      slice1.ports.each do |each|
+        slice1.mac_addresses(each).each do |each2|
+          merged_slice.add_mac_address(each2, each)
+          slice1.delete_port(each)
+        end
+      end
+      slice2.ports.each do |each|
+        slice2.mac_addresses(each).each do |each2|
+          merged_slice.add_mac_address(each2, each)
+          slice2.delete_port(each)
+        end
+      end
+    Html.update(Slice.all)
+  end
+```
+
 
 ##<a name="visualize">スライスの可視化
 スライスの状態をウェブブラウザで見ることができるようにした。方法としては前回、前々回と同じくvis.jsを利用してJavaScriptで記述するが、JavaScriptファイルはrubyで書き出す。
@@ -90,7 +277,7 @@ get '指定するURL' do
   end
 end
 ```
-そして，localでは，`./bit/rackup`コマンドによってでサーバを立ち上げた上で，
+そして，localでは，`./bin/rackup`コマンドによってでサーバを立ち上げた上で，
 以下のコマンドを実行することによりAPIを利用できる．<br>
 ```
 curl -sS -X 通信メソッド（GET / POST） 'http://localhost:9292/指定したURL'
@@ -99,15 +286,17 @@ curl -sS -X 通信メソッド（GET / POST） 'http://localhost:9292/指定し�
 加えて，次の２つのAPIを加えた．<br>
 ###① Sliceの分割
 このAPIはlocalでは以下のコマンドにより利用できる．<br>
-そして，`slice_a`スライスを`slice_a-1`スライスおよび`slice_a-2`スライスに分割する．<br>
+そして，`slice_a`スライスを`slice_a-1`スライスおよび`slice_a-2`スライスに分割する．
+このとき，`slice_a`中のホストのうち，macアドレスが11:11:11:11:11:11のホストを`slice_a-1`に，22:22:22:22:22:22のホストを`slice_a-2`に移動する．
+<br>
 ```
-curl -sS -X GET 'http://localhost:9292/slice_id/slice_a/split_slice_id_a-1/slice_a-1/split_slice_id_2/slice_a-2'
+curl -sS -X GET 'http://localhost:9292/org_slice/slice_a/split_slice1/slice_a-1:11:11:11:11:11:11/split_slice2/slice_a-2:22:22:22:22:22:22'
 ```
 ###② Sliceの統合
 このAPIはlocalでは以下のコマンドにより利用できる．<br>
 そして，`slice_a`スライスおよび`slice_b`スライスを`slice_c`スライスとして統合する．<br>
 ```
-curl -sS -X GET 'http://localhost:9292/slice_id_1/slice_a/slice_id_2/slice_b/merged_slice_id/slice_c'
+curl -sS -X GET 'http://localhost:9292/slice1/slice_a/slice2/slice_b/merged_slice_id/slice_c'
 ```
 
 
