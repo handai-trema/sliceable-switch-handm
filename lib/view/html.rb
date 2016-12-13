@@ -9,8 +9,16 @@ require 'slice'
       @nodes=[]
       @edges=[]
     end
-    def update(slices)
-      print slices
+    def self.update(slices)
+      puts slices
+      slices.each do |each|
+        puts each
+        each.ports.each do |each2|
+          each.mac_addresses(each2).each do |each3|
+            puts each3
+          end
+        end
+      end
     end
   end
 =begin
