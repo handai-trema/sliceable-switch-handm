@@ -1,5 +1,5 @@
 #Report: スライス機能の拡張
-Submission: &nbsp; Nov./30/2016<br>
+Submission: &nbsp; Dec./13/2016<br>
 Branch: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; develop<br>
 
 
