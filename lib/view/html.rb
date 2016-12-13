@@ -35,11 +35,10 @@ require 'slice'
 	main+="addSliceExample(\""+count.to_s+"\",\""+each+"\")\n"
         count+=1
       end
-      print "TEST2\n"
       @slicetohost.each do|key,value|
 	if !value.nil? then
 	value.each do |key2,value2|
- 	  main+="addHost(\""+value2.to_s+"\",\""+@slicetocount[key].to_s+"\")\n"
+ 	  main+="addHost(\""+key2+"\",\""+@slicetocount[key].to_s+"\")\n"
 	end
         end
       end
