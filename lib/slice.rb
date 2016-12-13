@@ -89,7 +89,10 @@ class Slice
           end
         end
       end
-#    end
+#    end    
+    #new(name).tap { |slice| all << slice }
+    Html.update(Slice.all)
+
   end
 
 
@@ -114,7 +117,9 @@ class Slice
           slice2.delete_port(each)
         end
       end
-#    end 
+#    end
+    #new(name).tap { |slice| all << slice }
+    Html.update(Slice.all)
   end
 
 
@@ -164,6 +169,8 @@ class Slice
            "MAC address #{mac_address} already exists")
     end
     @ports[port] += [Pio::Mac.new(mac_address)]
+    #new(name).tap { |slice| all << slice }
+    Html.update(Slice.all)
   end
 
   def delete_mac_address(mac_address, port_attrs)
